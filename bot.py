@@ -1,8 +1,10 @@
 """
-AgroVet AI — Telegram Bot
+AgroVet AI — Telegram Bot (Render Web Service uchun moslashtirilgan)
 """
 import os
 import logging
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from datetime import datetime, time as dtime
 
 import requests
@@ -233,13 +235,32 @@ async def check_reminders(context: ContextTypes.DEFAULT_TYPE):
         db.mark_as_sent(reminder_id)
 
 
+def run_health_server():
+    """Render Web Service HTTP porti tinglashini talab qiladi — shu soxta server javob beradi."""
+    port = int(os.environ.get("PORT", 10000))
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"AgroVet AI bot ishlayapti")
+
+        def log_message(self, format, *args):
+            pass
+
+    server = HTTPServer(("0.0.0.0", port), Handler)
+    server.serve_forever()
+
+
 def main():
     if not BOT_TOKEN:
-        raise RuntimeError("BOT_TOKEN topilmadi! .env faylini tekshiring.")
+        raise RuntimeError("BOT_TOKEN topilmadi! Environment Variables'ni tekshiring.")
     if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY topilmadi! .env faylini tekshiring.")
+        raise RuntimeError("GEMINI_API_KEY topilmadi! Environment Variables'ni tekshiring.")
 
     db.init_db()
+
+    threading.Thread(target=run_health_server, daemon=True).start()
 
     app = Application.builder().token(BOT_TOKEN).build()
 
