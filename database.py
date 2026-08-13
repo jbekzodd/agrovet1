@@ -26,24 +26,22 @@ def init_db():
     conn.close()
 
 
-def add_reminder(chat_id: int, animal_name: str, reminder_type: str, reminder_date: str, note: str = ""):
+def add_reminder(chat_id, animal_name, reminder_type, reminder_date, note=""):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO reminders (chat_id, animal_name, reminder_type, reminder_date, note, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reminders (chat_id, animal_name, reminder_type, reminder_date, note, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (chat_id, animal_name, reminder_type, reminder_date, note, datetime.now().isoformat())
     )
     conn.commit()
     conn.close()
 
 
-def get_reminders_for_date(date_str: str):
+def get_reminders_for_date(date_str):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, chat_id, animal_name, reminder_type, note FROM reminders "
-        "WHERE reminder_date = ? AND sent = 0",
+        "SELECT id, chat_id, animal_name, reminder_type, note FROM reminders WHERE reminder_date = ? AND sent = 0",
         (date_str,)
     )
     rows = cur.fetchall()
@@ -51,7 +49,7 @@ def get_reminders_for_date(date_str: str):
     return rows
 
 
-def mark_as_sent(reminder_id: int):
+def mark_as_sent(reminder_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("UPDATE reminders SET sent = 1 WHERE id = ?", (reminder_id,))
@@ -59,8 +57,13 @@ def mark_as_sent(reminder_id: int):
     conn.close()
 
 
-def get_user_reminders(chat_id: int):
+def get_user_reminders(chat_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        "SELECT animal_name, reminder_type, reminder_date, note FROM reminders "
+        "SELECT animal_name, reminder_type, reminder_date, note FROM reminders WHERE chat_id = ? AND sent = 0 ORDER BY reminder_date ASC",
+        (chat_id,)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
